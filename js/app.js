@@ -158,6 +158,41 @@
   }
 
   // ------------------------------------------------------------------
+  // Shared choice-bubble row helper (Task 11 review fix) — Missing Letter
+  // and First Sound Match both offer 3 `.choice-bubble` buttons (correct
+  // letter + 2 decoys) with identical click-wiring: correct tap disables
+  // every bubble in the row and calls `onCorrect(letter, btn)` for the
+  // caller to do its mode-specific completion work; wrong tap bounces just
+  // that bubble back (via triggerBounceBack) with no sound and calls the
+  // optional `onWrong(letter, btn)`. Builds and returns the `.bubble-row`
+  // element; callers append it into their own wrapper.
+  // ------------------------------------------------------------------
+  function renderBubbleRow(options, correctLetter, onCorrect, onWrong) {
+    const bounceGuards = new WeakSet();
+    const row = document.createElement('div');
+    row.className = 'bubble-row';
+    options.forEach((letter) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-bubble';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        if (letter === correctLetter) {
+          Array.from(row.children).forEach((el) => { el.disabled = true; });
+          onCorrect(letter, btn);
+        } else {
+          // Wrong tap: bounce-back animation only, no sound (per spec).
+          triggerBounceBack(btn, bounceGuards);
+          if (onWrong) onWrong(letter, btn);
+        }
+      });
+      row.appendChild(btn);
+    });
+    return row;
+  }
+
+  // ------------------------------------------------------------------
   // Missing Letter mode (Task 10) — the word is shown with one letter
   // blanked out, and 3 choice bubbles (correct letter + 2 decoys, from
   // SpellLogic.buildMissingLetterChallenge) are offered below. Tapping the
@@ -192,38 +227,19 @@
       tileRow.appendChild(tile);
     });
 
-    const bubbleRow = document.createElement('div');
-    bubbleRow.className = 'bubble-row';
-    const bounceGuards = new WeakSet();
-    options.forEach((letter) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'choice-bubble';
-      btn.textContent = letter;
-      btn.addEventListener('click', () => handleBubbleTap(letter, btn));
-      bubbleRow.appendChild(btn);
+    const bubbleRow = renderBubbleRow(options, missingLetter, (letter) => {
+      blankTile.textContent = letter;
+      blankTile.classList.remove('tile--blank');
+      blankTile.classList.add('tile--filled');
+      Engine.playChime('correct');
+
+      // Filling the one blank always completes the word in this mode.
+      handleWordComplete(word);
     });
 
     wrap.appendChild(tileRow);
     wrap.appendChild(bubbleRow);
     area.appendChild(wrap);
-
-    function handleBubbleTap(letter, btn) {
-      if (btn.disabled) return;
-      if (letter === missingLetter) {
-        blankTile.textContent = letter;
-        blankTile.classList.remove('tile--blank');
-        blankTile.classList.add('tile--filled');
-        Engine.playChime('correct');
-        Array.from(bubbleRow.children).forEach((el) => { el.disabled = true; });
-
-        // Filling the one blank always completes the word in this mode.
-        handleWordComplete(word);
-      } else {
-        // Wrong tap: bounce-back animation only, no sound (per spec).
-        triggerBounceBack(btn, bounceGuards);
-      }
-    }
   }
 
   // ------------------------------------------------------------------
@@ -252,35 +268,16 @@
     pictureWrap.className = 'firstsound-picture';
     pictureWrap.innerHTML = PICTURES[id] || '';
 
-    const bubbleRow = document.createElement('div');
-    bubbleRow.className = 'bubble-row';
-    const bounceGuards = new WeakSet();
-    options.forEach((letter) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'choice-bubble';
-      btn.textContent = letter;
-      btn.addEventListener('click', () => handleBubbleTap(letter, btn));
-      bubbleRow.appendChild(btn);
+    const bubbleRow = renderBubbleRow(options, correctLetter, () => {
+      Engine.playChime('correct');
+
+      // A single correct tap always completes this mode (no blanks).
+      handleWordComplete(word);
     });
 
     wrap.appendChild(pictureWrap);
     wrap.appendChild(bubbleRow);
     area.appendChild(wrap);
-
-    function handleBubbleTap(letter, btn) {
-      if (btn.disabled) return;
-      if (letter === correctLetter) {
-        Engine.playChime('correct');
-        Array.from(bubbleRow.children).forEach((el) => { el.disabled = true; });
-
-        // A single correct tap always completes this mode (no blanks).
-        handleWordComplete(word);
-      } else {
-        // Wrong tap: bounce-back animation only, no sound (per spec).
-        triggerBounceBack(btn, bounceGuards);
-      }
-    }
   }
 
   // ------------------------------------------------------------------
