@@ -72,9 +72,7 @@
     if (mode === 'build') {
       renderBuildWord(entry.word);
     } else if (mode === 'missing') {
-      // TODO(Task 10): implement Missing Letter mode renderer here.
-      console.warn('renderChallenge: "missing" mode not yet implemented (Task 10) — falling back to Build the Word');
-      renderBuildWord(entry.word);
+      renderMissingLetter(entry.word);
     } else if (mode === 'firstsound') {
       // TODO(Task 11): implement First Sound Match mode renderer here.
       console.warn('renderChallenge: "firstsound" mode not yet implemented (Task 11) — falling back to Build the Word');
@@ -145,6 +143,83 @@
         void btn.offsetWidth; // restart animation if tapped again quickly
         btn.classList.add('bounce-back');
         btn.addEventListener('animationend', () => btn.classList.remove('bounce-back'), { once: true });
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Missing Letter mode (Task 10) — the word is shown with one letter
+  // blanked out, and 3 choice bubbles (correct letter + 2 decoys, from
+  // SpellLogic.buildMissingLetterChallenge) are offered below. Tapping the
+  // correct bubble fills the blank, chimes, and completes the word;
+  // tapping a decoy bounces just that bubble back with no sound, leaving
+  // the blank open for another try. Renders directly into #challenge-area
+  // (already cleared by renderChallenge()), following the same pattern as
+  // renderBuildWord: local closure state, no Session/module-level mutation.
+  // ------------------------------------------------------------------
+  function renderMissingLetter(word) {
+    const area = document.getElementById('challenge-area');
+    if (!area) return;
+
+    const challenge = SpellLogic.buildMissingLetterChallenge(word);
+    const { displayLetters, missingIndex, missingLetter, options } = challenge;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'missing-letter';
+
+    const tileRow = document.createElement('div');
+    tileRow.className = 'tile-row';
+    let blankTile = null;
+    displayLetters.forEach((letter, i) => {
+      const tile = document.createElement('div');
+      if (letter === null) {
+        tile.className = 'tile tile--blank';
+        blankTile = tile;
+      } else {
+        tile.className = 'tile tile--filled';
+        tile.textContent = letter;
+      }
+      tileRow.appendChild(tile);
+    });
+
+    const bubbleRow = document.createElement('div');
+    bubbleRow.className = 'bubble-row';
+    const bounceTimers = new WeakSet();
+    options.forEach((letter) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-bubble';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => handleBubbleTap(letter, btn));
+      bubbleRow.appendChild(btn);
+    });
+
+    wrap.appendChild(tileRow);
+    wrap.appendChild(bubbleRow);
+    area.appendChild(wrap);
+
+    function handleBubbleTap(letter, btn) {
+      if (btn.disabled) return;
+      if (letter === missingLetter) {
+        blankTile.textContent = letter;
+        blankTile.classList.remove('tile--blank');
+        blankTile.classList.add('tile--filled');
+        Engine.playChime('correct');
+        Array.from(bubbleRow.children).forEach((el) => { el.disabled = true; });
+
+        // Filling the one blank always completes the word in this mode.
+        handleWordComplete(word);
+      } else {
+        // Wrong tap: bounce-back animation only, no sound (per spec).
+        if (bounceTimers.has(btn)) return;
+        bounceTimers.add(btn);
+        btn.classList.remove('bounce-back');
+        void btn.offsetWidth; // restart animation if tapped again quickly
+        btn.classList.add('bounce-back');
+        btn.addEventListener('animationend', () => {
+          btn.classList.remove('bounce-back');
+          bounceTimers.delete(btn);
+        }, { once: true });
       }
     }
   }
@@ -237,6 +312,7 @@
     startSession,
     renderChallenge,
     renderBuildWord,
+    renderMissingLetter,
     handleWordComplete,
   };
 })();

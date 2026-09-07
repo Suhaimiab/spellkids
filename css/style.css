@@ -256,3 +256,47 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .bounce-back { animation: none !important; }
 }
+
+/* ============================================================
+   Missing Letter mode
+   ============================================================ */
+
+.missing-letter {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.bubble-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.choice-bubble {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--sun);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-soft), inset 0 -4px 0 var(--sun-deep);
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.choice-bubble:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.choice-bubble:disabled {
+  background: var(--sky);
+  color: #fff;
+  box-shadow: var(--shadow-soft), inset 0 -4px 0 var(--sky-deep);
+  opacity: 0.9;
+  pointer-events: none;
+}
