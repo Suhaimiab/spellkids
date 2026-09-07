@@ -81,6 +81,25 @@
   }
 
   // ------------------------------------------------------------------
+  // Shared wrong-tap "bounce-back" animation helper (Task 9/10 review fix).
+  // Restarts the CSS bounce-back animation on `el` and cleans up the class
+  // once it ends. Guarded per-element via `guardSet` (a WeakSet the caller
+  // owns for its own set of buttons/bubbles) so rapid repeat wrong-taps on
+  // the same element don't stack up duplicate animationend listeners.
+  // ------------------------------------------------------------------
+  function triggerBounceBack(el, guardSet) {
+    if (guardSet.has(el)) return;
+    guardSet.add(el);
+    el.classList.remove('bounce-back');
+    void el.offsetWidth; // restart animation if tapped again quickly
+    el.classList.add('bounce-back');
+    el.addEventListener('animationend', () => {
+      el.classList.remove('bounce-back');
+      guardSet.delete(el);
+    }, { once: true });
+  }
+
+  // ------------------------------------------------------------------
   // Build the Word mode (Task 9) — blank tiles + a scrambled letter tray
   // containing only this word's letters. Tapping the next-needed letter
   // fills a tile and chimes; any other tap bounces that tile back with no
@@ -92,6 +111,7 @@
     if (!area) return;
 
     let filledCount = 0;
+    const bounceGuards = new WeakSet();
 
     const wrap = document.createElement('div');
     wrap.className = 'build-word';
@@ -139,10 +159,7 @@
         }
       } else {
         // Wrong tap: bounce-back animation only, no sound (per spec).
-        btn.classList.remove('bounce-back');
-        void btn.offsetWidth; // restart animation if tapped again quickly
-        btn.classList.add('bounce-back');
-        btn.addEventListener('animationend', () => btn.classList.remove('bounce-back'), { once: true });
+        triggerBounceBack(btn, bounceGuards);
       }
     }
   }
@@ -162,7 +179,7 @@
     if (!area) return;
 
     const challenge = SpellLogic.buildMissingLetterChallenge(word);
-    const { displayLetters, missingIndex, missingLetter, options } = challenge;
+    const { displayLetters, missingLetter, options } = challenge;
 
     const wrap = document.createElement('div');
     wrap.className = 'missing-letter';
@@ -170,7 +187,7 @@
     const tileRow = document.createElement('div');
     tileRow.className = 'tile-row';
     let blankTile = null;
-    displayLetters.forEach((letter, i) => {
+    displayLetters.forEach((letter) => {
       const tile = document.createElement('div');
       if (letter === null) {
         tile.className = 'tile tile--blank';
@@ -184,7 +201,7 @@
 
     const bubbleRow = document.createElement('div');
     bubbleRow.className = 'bubble-row';
-    const bounceTimers = new WeakSet();
+    const bounceGuards = new WeakSet();
     options.forEach((letter) => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -211,15 +228,7 @@
         handleWordComplete(word);
       } else {
         // Wrong tap: bounce-back animation only, no sound (per spec).
-        if (bounceTimers.has(btn)) return;
-        bounceTimers.add(btn);
-        btn.classList.remove('bounce-back');
-        void btn.offsetWidth; // restart animation if tapped again quickly
-        btn.classList.add('bounce-back');
-        btn.addEventListener('animationend', () => {
-          btn.classList.remove('bounce-back');
-          bounceTimers.delete(btn);
-        }, { once: true });
+        triggerBounceBack(btn, bounceGuards);
       }
     }
   }
