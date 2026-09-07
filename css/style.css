@@ -301,6 +301,19 @@ button {
   pointer-events: none;
 }
 
+/* Shared word picture — shown during play in all three modes (per spec:
+   "the round remains fully playable via the picture and on-screen letters
+   alone"), not just First Sound Match. */
+.challenge-picture {
+  width: 180px;
+  height: 180px;
+}
+
+.challenge-picture svg {
+  width: 100%;
+  height: 100%;
+}
+
 /* ============================================================
    First Sound Match mode
    ============================================================ */
@@ -311,16 +324,6 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 28px;
-}
-
-.firstsound-picture {
-  width: 180px;
-  height: 180px;
-}
-
-.firstsound-picture svg {
-  width: 100%;
-  height: 100%;
 }
 
 /* ============================================================
@@ -399,6 +402,17 @@ button {
 .pip.filled {
   background: var(--leaf);
   transform: scale(1.1);
+}
+
+/* #view-game only has `.view`'s centering rules (align-items/justify-content),
+   with no flex-direction set — that leaves the default `row`, which crams
+   the pips bar, mascot, and challenge area side-by-side instead of stacked
+   (found live in the Task 14 playtest: pips squeezed to one edge, mascot
+   floating mid-screen, tiles/tray/picture crammed into a sliver on the
+   other edge). Stack them vertically instead. */
+#view-game {
+  flex-direction: column;
+  gap: 8px;
 }
 
 .game-topbar {

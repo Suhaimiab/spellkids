@@ -19,6 +19,21 @@
   // owns for its own set of buttons/bubbles) so rapid repeat wrong-taps on
   // the same element don't stack up duplicate animationend listeners.
   // ------------------------------------------------------------------
+  // ------------------------------------------------------------------
+  // Shared word-picture element (playtest fix, Task 14) — per spec, every
+  // round "remains fully playable via the picture and on-screen letters
+  // alone," and Build the Word is spelled out explicitly as "blank tiles
+  // shown below the picture." All three modes need the picture visible
+  // during play, not just First Sound Match. Returns a fresh
+  // `.challenge-picture` wrapper looked up from PICTURES by id.
+  // ------------------------------------------------------------------
+  function buildPictureElement(id) {
+    const pictureWrap = document.createElement('div');
+    pictureWrap.className = 'challenge-picture';
+    pictureWrap.innerHTML = PICTURES[id] || '';
+    return pictureWrap;
+  }
+
   function triggerBounceBack(el, guardSet) {
     if (guardSet.has(el)) return;
     guardSet.add(el);
@@ -69,6 +84,7 @@
       tray.appendChild(btn);
     });
 
+    wrap.appendChild(buildPictureElement(id));
     wrap.appendChild(tileRow);
     wrap.appendChild(tray);
     area.appendChild(wrap);
@@ -176,6 +192,7 @@
       window.SpellApp.handleWordComplete(word, id);
     });
 
+    wrap.appendChild(buildPictureElement(id));
     wrap.appendChild(tileRow);
     wrap.appendChild(bubbleRow);
     area.appendChild(wrap);
@@ -203,9 +220,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'first-sound';
 
-    const pictureWrap = document.createElement('div');
-    pictureWrap.className = 'firstsound-picture';
-    pictureWrap.innerHTML = PICTURES[id] || '';
+    const pictureWrap = buildPictureElement(id);
 
     const bubbleRow = renderBubbleRow(options, correctLetter, () => {
       Engine.playChime('correct');

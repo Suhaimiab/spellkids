@@ -57,10 +57,9 @@
   // Challenge dispatch (Task 9) — reads the current word off Session and
   // draws a mode from Session.modeBag, then hands off to that mode's
   // renderer. All three modes ('build', 'missing', 'firstsound') are
-  // implemented as of Task 11. 'firstsound' needs the word's picture
-  // (looked up from PICTURES by id), so all three renderers are called
-  // with the word string plus the entry's id for consistency, even though
-  // 'build'/'missing' don't use the id today.
+  // implemented as of Task 11, and all three need the word's picture
+  // (looked up from PICTURES by id) shown during play, so all three
+  // renderers are called with the word string plus the entry's id.
   // ------------------------------------------------------------------
   function renderChallenge() {
     const entry = Session.wordOrder[Session.currentIndex];
@@ -127,18 +126,15 @@
   // personalized praise line drawn from Session.praiseBag, spoken via
   // Engine.speak and shown as text. Renders into #challenge-area.
   //
-  // Picture-display design decision: Build the Word and Missing Letter
-  // don't render the word's picture at all during play (only First Sound
-  // Match does, via .firstsound-picture). Since the wiggle reward is a
-  // universal "you finished the word" celebration, not a first-sound-mode
-  // feature, we can't rely on the picture already being on screen. So
-  // this clears #challenge-area (its mode-specific content is done being
-  // interacted with anyway — the word is solved) and renders a dedicated
-  // `.reward` block into it containing the picture (fresh `[data-anim]`
-  // group looked up from PICTURES by id) and the praise text. This
-  // guarantees the picture is visible and animates on every completion,
-  // regardless of which mode was just played, without needing each
-  // renderer to special-case picture display.
+  // All three modes now show the word's picture during play too (Task 14
+  // playtest fix: spec requires it — "the round remains fully playable via
+  // the picture and on-screen letters alone" — and it was missing from
+  // Build the Word / Missing Letter). Even so, this still clears
+  // #challenge-area and renders a dedicated `.reward` block with its own
+  // fresh picture element (fresh `[data-anim]` group looked up from
+  // PICTURES by id) rather than reusing whatever picture element is
+  // already on screen — simplest way to guarantee the wiggle animation
+  // class always starts clean, regardless of which mode was just played.
   // ------------------------------------------------------------------
   function renderReward(id) {
     const area = document.getElementById('challenge-area');
