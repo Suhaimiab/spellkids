@@ -39,14 +39,6 @@
   <script src="js/words.js"></script>
   <script src="js/pictures.js"></script>
   <script src="js/mascot.js"></script>
-  <script>
-    // Mount the title-screen mascot now so the title screen is fully
-    // rendered even before app.js (Task 8) exists / takes over routing.
-    // app.js will mount the game/end mascots itself once it's built.
-    document.addEventListener('DOMContentLoaded', function () {
-      Mascot.mount(document.getElementById('mascot-title'));
-    });
-  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
