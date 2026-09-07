@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Ceria Kids: Spelling</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <section id="view-title" class="view">
+    <div class="title-card">
+      <div class="mascot-mount" id="mascot-title"></div>
+      <h1 class="app-title">Ceria Kids: Spelling</h1>
+      <p class="app-subtitle">Let's build some words!</p>
+      <button id="start-btn" class="btn-start" type="button">Start</button>
+    </div>
+  </section>
+
+  <section id="view-game" class="view" hidden>
+    <div class="game-topbar">
+      <div class="pips" id="pips"></div>
+    </div>
+    <div class="game-mascot mascot-mount" id="mascot-game"></div>
+    <div id="challenge-area" class="challenge-area"></div>
+  </section>
+
+  <section id="view-end" class="view" hidden>
+    <div class="title-card">
+      <div class="mascot-mount" id="mascot-end"></div>
+      <h1 class="app-title">Great job!</h1>
+      <p id="end-praise" class="app-subtitle"></p>
+      <button id="play-again-btn" class="btn-start" type="button">Play Again</button>
+    </div>
+  </section>
+
+  <script src="js/logic.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/words.js"></script>
+  <script src="js/pictures.js"></script>
+  <script src="js/mascot.js"></script>
+  <script>
+    // Mount the title-screen mascot now so the title screen is fully
+    // rendered even before app.js (Task 8) exists / takes over routing.
+    // app.js will mount the game/end mascots itself once it's built.
+    document.addEventListener('DOMContentLoaded', function () {
+      Mascot.mount(document.getElementById('mascot-title'));
+    });
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -89,3 +89,67 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .mascot { animation: none !important; }
 }
+
+/* ============================================================
+   Title / end screen
+   ============================================================ */
+
+.view {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.title-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mascot-mount {
+  width: 92px;
+  height: 92px;
+  margin-bottom: 8px;
+}
+
+.app-title {
+  font-size: 2rem;
+  color: var(--papaya-deep);
+  line-height: 1.15;
+}
+
+.app-subtitle {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 0 0 16px;
+}
+
+.btn-start {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--papaya);
+  padding: 18px 48px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-start:hover {
+  background: var(--papaya-deep);
+}
+
+.btn-start:active {
+  transform: scale(0.96);
+}
