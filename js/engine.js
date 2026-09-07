@@ -1,10 +1,66 @@
 // js/engine.js
 const Engine = (function () {
+  // Substrings (checked case-insensitively against voice.name / voice.voiceURI)
+  // commonly associated with young/female-sounding voices across platforms.
+  const FEMALE_VOICE_HINTS = [
+    'female', 'woman', 'girl',
+    'samantha', // macOS/iOS
+    'zira',     // Windows
+    'susan', 'karen', 'moira', 'tessa', 'veena', 'fiona', 'kate', // other common OS voices
+    'google uk english female',
+    'google us english', // Chrome's default US voice reads as female
+    'aria', 'jenny', 'michelle', // common online/neural voice names
+  ];
+
+  // Cache is a single-element box so we can distinguish "not yet resolved"
+  // from "resolved to undefined" (i.e. use browser default) without a magic value.
+  let voiceCache = null; // { voice } once resolved, else null
+  let listenerAttached = false;
+
+  function pickVoice(voices) {
+    if (!voices || !voices.length) return undefined;
+    const englishVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
+    const pool = englishVoices.length ? englishVoices : voices;
+
+    const female = pool.find((v) => {
+      const name = (v.name || '').toLowerCase();
+      const uri = (v.voiceURI || '').toLowerCase();
+      return FEMALE_VOICE_HINTS.some((hint) => name.includes(hint) || uri.includes(hint));
+    });
+    if (female) return female;
+
+    return englishVoices.length ? englishVoices[0] : undefined;
+  }
+
+  function resolveVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length) {
+      voiceCache = { voice: pickVoice(voices) };
+      return voiceCache.voice;
+    }
+    // Voices not loaded yet (common on first call, esp. in Chrome). Speak with
+    // the browser default this once, and listen for voiceschanged so future
+    // calls can benefit once the list is populated.
+    if (!listenerAttached && 'onvoiceschanged' in window.speechSynthesis) {
+      listenerAttached = true;
+      window.speechSynthesis.addEventListener(
+        'voiceschanged',
+        () => {
+          voiceCache = { voice: pickVoice(window.speechSynthesis.getVoices()) };
+        },
+        { once: true }
+      );
+    }
+    return undefined;
+  }
+
   function speak(text, opts = {}) {
     if (!('speechSynthesis' in window)) return; // silent no-op, per spec
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = opts.rate || 0.9;
-    utter.pitch = opts.pitch || 1.1;
+    utter.pitch = opts.pitch || 1.15;
+    const voice = voiceCache ? voiceCache.voice : resolveVoice();
+    if (voice) utter.voice = voice;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
   }
