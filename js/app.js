@@ -29,6 +29,10 @@
 
   // Session state — created fresh each time the Start button is pressed.
   const Session = {
+    id: 0,           // monotonically increasing — bumped by startSession() so
+                      // stale setTimeout closures from a previous session
+                      // (see handleWordComplete) can detect they're stale and
+                      // no-op instead of corrupting the new session's state.
     wordOrder: [],   // shuffled copy of WORDS for this session
     currentIndex: 0, // index into wordOrder
     modeBag: null,   // shuffle-bag over ['build', 'missing', 'firstsound']
@@ -37,6 +41,7 @@
   };
 
   function startSession() {
+    Session.id++;
     Session.wordOrder = SpellLogic.shuffle(WORDS);
     Session.currentIndex = 0;
     Session.completed = Session.wordOrder.map(() => false);
@@ -148,7 +153,7 @@
         btn.classList.add('tray-letter--used');
 
         if (SpellLogic.isWordComplete(word, filledCount)) {
-          handleWordComplete(word);
+          handleWordComplete(word, id);
         }
       } else {
         // Wrong tap: bounce-back animation only, no sound (per spec).
@@ -234,7 +239,7 @@
       Engine.playChime('correct');
 
       // Filling the one blank always completes the word in this mode.
-      handleWordComplete(word);
+      handleWordComplete(word, id);
     });
 
     wrap.appendChild(tileRow);
@@ -272,7 +277,7 @@
       Engine.playChime('correct');
 
       // A single correct tap always completes this mode (no blanks).
-      handleWordComplete(word);
+      handleWordComplete(word, id);
     });
 
     wrap.appendChild(pictureWrap);
@@ -281,26 +286,84 @@
   }
 
   // ------------------------------------------------------------------
-  // PLACEHOLDER completion handler — Task 12 will replace this with the
-  // real shared handler (picture wiggle animation, Engine.playChime
-  // ('complete'), a spoken/shown personalized praise line drawn from
-  // Session.praiseBag, filling the pip, then advancing after ~1.5s or
-  // showing the end-of-session screen on the last word — Task 13).
+  // Shared word-completion handler (Task 12) — called by all three modes
+  // once a word is fully solved. Plays the completion chime, shows the
+  // word's picture wiggling as the reward, speaks + displays a
+  // personalized praise line drawn from Session.praiseBag, fills the
+  // pip, then advances to the next word (or falls through to a minimal
+  // last-word log — Task 13 owns the real end-of-session screen).
   //
-  // For now this just proves the mode is playable end-to-end: it logs,
-  // plays the 'complete' chime, marks/fills the current pip, and after a
-  // short delay advances to the next word (looping the dispatch through
-  // renderChallenge()) so Build the Word can be exercised for more than
-  // one round in manual testing. Task 12's implementer: replace this
-  // function's body wholesale; nothing here needs to survive.
+  // Picture-display design decision: Build the Word and Missing Letter
+  // don't render the word's picture at all during play (only First Sound
+  // Match does, via .firstsound-picture). Since the wiggle reward is a
+  // universal "you finished the word" celebration, not a first-sound-mode
+  // feature, we can't rely on the picture already being on screen. So
+  // this handler clears #challenge-area (its mode-specific content is
+  // done being interacted with anyway — the word is solved) and renders
+  // a dedicated `.reward` block into it containing the picture (fresh
+  // `[data-anim]` group looked up from PICTURES by id) and the praise
+  // text. This guarantees the picture is visible and animates on every
+  // completion, regardless of which mode was just played, without
+  // needing each renderer to special-case picture display.
+  //
+  // Stale setTimeout guard (carried-forward Task 9 review concern): the
+  // advance-to-next-word timeout snapshots Session.id and checks it
+  // still matches when the timeout fires. Session.id is bumped once per
+  // startSession() call, so if a new session starts (Task 13's "Play
+  // Again") before this timeout fires, the stale closure sees a mismatch
+  // and does nothing instead of mutating the new session's currentIndex.
+  //
+  // Speech-overlap note (carried-forward Task 11 review concern):
+  // Engine.speak() cancels any in-flight utterance before speaking
+  // (newest-wins). Engine.speak(line) below is called immediately, before
+  // the 1.5s hold begins, giving the praise line the longest possible
+  // head start to finish before the next round's renderFirstSound might
+  // call Engine.speak(word) and cut it off. This is an accepted
+  // low-risk "newest wins" tradeoff per spec, not a bug — a speech queue
+  // would be overkill here.
   // ------------------------------------------------------------------
-  function handleWordComplete(word) {
-    console.log('[placeholder] word complete:', word, '— Task 12 will add reward animation + praise');
+  function handleWordComplete(word, id) {
     Engine.playChime('complete');
+
+    const area = document.getElementById('challenge-area');
+    if (area) {
+      area.innerHTML = '';
+
+      const reward = document.createElement('div');
+      reward.className = 'reward';
+
+      const pictureWrap = document.createElement('div');
+      pictureWrap.className = 'reward-picture';
+      pictureWrap.innerHTML = PICTURES[id] || '';
+      reward.appendChild(pictureWrap);
+
+      // Trigger the wiggle keyframe animation on the picture's [data-anim]
+      // group (Task 5). Fresh element every time, so no need to restart
+      // via reflow the way triggerBounceBack does for reused buttons.
+      const animEl = pictureWrap.querySelector('[data-anim]');
+      if (animEl) animEl.classList.add('celebrate');
+
+      const praiseLine = Session.praiseBag.next();
+      Engine.speak(praiseLine);
+
+      const praiseText = document.createElement('p');
+      praiseText.className = 'reward-praise';
+      praiseText.textContent = praiseLine;
+      reward.appendChild(praiseText);
+
+      area.appendChild(reward);
+    } else {
+      // No #challenge-area to render into — still speak the praise so
+      // audio feedback isn't silently lost.
+      Engine.speak(Session.praiseBag.next());
+    }
+
     Session.completed[Session.currentIndex] = true;
     renderPips('pips', Session.wordOrder.length, Session.completed);
 
+    const sessionId = Session.id;
     setTimeout(() => {
+      if (Session.id !== sessionId) return; // a new session started — stale, ignore
       Session.currentIndex++;
       if (Session.currentIndex < Session.wordOrder.length) {
         renderChallenge();
