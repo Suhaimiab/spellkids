@@ -45,6 +45,138 @@
 
     showView('game');
     renderPips('pips', Session.wordOrder.length, Session.completed);
+    renderChallenge();
+  }
+
+  // ------------------------------------------------------------------
+  // Challenge dispatch (Task 9) — reads the current word off Session and
+  // draws a mode from Session.modeBag, then hands off to that mode's
+  // renderer. Only 'build' (Build the Word) is implemented in Task 9;
+  // 'missing' (Task 10) and 'firstsound' (Task 11) are stubs.
+  //
+  // TEMPORARY FALLBACK: until Tasks 10-11 land, the 'missing' and
+  // 'firstsound' branches fall back to renderBuildWord() (with a
+  // console.warn) instead of leaving #challenge-area blank — this keeps
+  // every draw from Session.modeBag testable end-to-end in the browser
+  // right now, since the bag can hand back any of the three modes on any
+  // given word. Task 10/11's implementer: replace the matching branch's
+  // body with the real renderer and delete its console.warn/fallback call.
+  // ------------------------------------------------------------------
+  function renderChallenge() {
+    const entry = Session.wordOrder[Session.currentIndex];
+    if (!entry) return;
+    const mode = Session.modeBag.next();
+    const area = document.getElementById('challenge-area');
+    if (area) area.innerHTML = '';
+
+    if (mode === 'build') {
+      renderBuildWord(entry.word);
+    } else if (mode === 'missing') {
+      // TODO(Task 10): implement Missing Letter mode renderer here.
+      console.warn('renderChallenge: "missing" mode not yet implemented (Task 10) — falling back to Build the Word');
+      renderBuildWord(entry.word);
+    } else if (mode === 'firstsound') {
+      // TODO(Task 11): implement First Sound Match mode renderer here.
+      console.warn('renderChallenge: "firstsound" mode not yet implemented (Task 11) — falling back to Build the Word');
+      renderBuildWord(entry.word);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Build the Word mode (Task 9) — blank tiles + a scrambled letter tray
+  // containing only this word's letters. Tapping the next-needed letter
+  // fills a tile and chimes; any other tap bounces that tile back with no
+  // sound. Renders directly into #challenge-area per the module-level
+  // render pattern established in Task 8 (no Session methods).
+  // ------------------------------------------------------------------
+  function renderBuildWord(word) {
+    const area = document.getElementById('challenge-area');
+    if (!area) return;
+
+    let filledCount = 0;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'build-word';
+
+    const tileRow = document.createElement('div');
+    tileRow.className = 'tile-row';
+    const tileEls = word.split('').map(() => {
+      const tile = document.createElement('div');
+      tile.className = 'tile tile--blank';
+      tileRow.appendChild(tile);
+      return tile;
+    });
+
+    const tray = document.createElement('div');
+    tray.className = 'tray';
+    const scrambled = SpellLogic.scrambleLetters(word);
+    scrambled.forEach((letter) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tray-letter';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => handleTrayTap(letter, btn));
+      tray.appendChild(btn);
+    });
+
+    wrap.appendChild(tileRow);
+    wrap.appendChild(tray);
+    area.appendChild(wrap);
+
+    function handleTrayTap(letter, btn) {
+      if (btn.disabled) return;
+      const needed = SpellLogic.nextNeededLetter(word, filledCount);
+      if (needed !== null && letter === needed) {
+        const tile = tileEls[filledCount];
+        tile.textContent = letter;
+        tile.classList.remove('tile--blank');
+        tile.classList.add('tile--filled');
+        filledCount++;
+        Engine.playChime('correct');
+        btn.disabled = true;
+        btn.classList.add('tray-letter--used');
+
+        if (SpellLogic.isWordComplete(word, filledCount)) {
+          handleWordComplete(word);
+        }
+      } else {
+        // Wrong tap: bounce-back animation only, no sound (per spec).
+        btn.classList.remove('bounce-back');
+        void btn.offsetWidth; // restart animation if tapped again quickly
+        btn.classList.add('bounce-back');
+        btn.addEventListener('animationend', () => btn.classList.remove('bounce-back'), { once: true });
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // PLACEHOLDER completion handler — Task 12 will replace this with the
+  // real shared handler (picture wiggle animation, Engine.playChime
+  // ('complete'), a spoken/shown personalized praise line drawn from
+  // Session.praiseBag, filling the pip, then advancing after ~1.5s or
+  // showing the end-of-session screen on the last word — Task 13).
+  //
+  // For now this just proves the mode is playable end-to-end: it logs,
+  // plays the 'complete' chime, marks/fills the current pip, and after a
+  // short delay advances to the next word (looping the dispatch through
+  // renderChallenge()) so Build the Word can be exercised for more than
+  // one round in manual testing. Task 12's implementer: replace this
+  // function's body wholesale; nothing here needs to survive.
+  // ------------------------------------------------------------------
+  function handleWordComplete(word) {
+    console.log('[placeholder] word complete:', word, '— Task 12 will add reward animation + praise');
+    Engine.playChime('complete');
+    Session.completed[Session.currentIndex] = true;
+    renderPips('pips', Session.wordOrder.length, Session.completed);
+
+    setTimeout(() => {
+      Session.currentIndex++;
+      if (Session.currentIndex < Session.wordOrder.length) {
+        renderChallenge();
+      } else {
+        console.log('[placeholder] session complete — Task 13 will show the end-of-session view');
+      }
+    }, 1500);
   }
 
   // Pip rendering — one pip per word, filled once that word is completed.
@@ -98,5 +230,13 @@
 
   // Exposed for later tasks (challenge rendering, reward/praise) and for
   // manual/console inspection.
-  window.SpellApp = { Session, showView, renderPips, startSession };
+  window.SpellApp = {
+    Session,
+    showView,
+    renderPips,
+    startSession,
+    renderChallenge,
+    renderBuildWord,
+    handleWordComplete,
+  };
 })();

@@ -153,3 +153,106 @@ button {
 .btn-start:active {
   transform: scale(0.96);
 }
+
+/* ============================================================
+   Challenge area / Build the Word mode
+   ============================================================ */
+
+.challenge-area {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.build-word {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.tile-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tile {
+  width: 56px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.tile--blank {
+  background: var(--card);
+  box-shadow: inset 0 0 0 3px var(--bg-deep);
+}
+
+.tile--filled {
+  background: var(--leaf);
+  color: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.tray {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tray-letter {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--sky);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.tray-letter:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.tray-letter--used,
+.tray-letter:disabled {
+  background: var(--bg-deep);
+  color: transparent;
+  box-shadow: none;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.bounce-back {
+  animation: bounce-back 0.3s ease;
+}
+
+@keyframes bounce-back {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bounce-back { animation: none !important; }
+}
