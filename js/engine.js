@@ -16,6 +16,7 @@ const Engine = (function () {
       if (!Ctx) return null;
       audioCtx = new Ctx();
     }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
