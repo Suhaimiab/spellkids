@@ -286,77 +286,87 @@
   }
 
   // ------------------------------------------------------------------
-  // Shared word-completion handler (Task 12) — called by all three modes
-  // once a word is fully solved. Plays the completion chime, shows the
-  // word's picture wiggling as the reward, speaks + displays a
-  // personalized praise line drawn from Session.praiseBag, fills the
-  // pip, then advances to the next word (or falls through to a minimal
-  // last-word log — Task 13 owns the real end-of-session screen).
+  // Reward block (Task 12, extracted in Task 13) — builds the "you
+  // finished the word" celebration: the word's picture wiggling plus a
+  // personalized praise line drawn from Session.praiseBag, spoken via
+  // Engine.speak and shown as text. Renders into #challenge-area.
   //
   // Picture-display design decision: Build the Word and Missing Letter
   // don't render the word's picture at all during play (only First Sound
   // Match does, via .firstsound-picture). Since the wiggle reward is a
   // universal "you finished the word" celebration, not a first-sound-mode
   // feature, we can't rely on the picture already being on screen. So
-  // this handler clears #challenge-area (its mode-specific content is
-  // done being interacted with anyway — the word is solved) and renders
-  // a dedicated `.reward` block into it containing the picture (fresh
-  // `[data-anim]` group looked up from PICTURES by id) and the praise
-  // text. This guarantees the picture is visible and animates on every
-  // completion, regardless of which mode was just played, without
-  // needing each renderer to special-case picture display.
+  // this clears #challenge-area (its mode-specific content is done being
+  // interacted with anyway — the word is solved) and renders a dedicated
+  // `.reward` block into it containing the picture (fresh `[data-anim]`
+  // group looked up from PICTURES by id) and the praise text. This
+  // guarantees the picture is visible and animates on every completion,
+  // regardless of which mode was just played, without needing each
+  // renderer to special-case picture display.
+  // ------------------------------------------------------------------
+  function renderReward(id) {
+    const area = document.getElementById('challenge-area');
+    if (!area) {
+      // No #challenge-area to render into — still speak the praise so
+      // audio feedback isn't silently lost.
+      Engine.speak(Session.praiseBag.next());
+      return;
+    }
+
+    area.innerHTML = '';
+
+    const reward = document.createElement('div');
+    reward.className = 'reward';
+
+    const pictureWrap = document.createElement('div');
+    pictureWrap.className = 'reward-picture';
+    pictureWrap.innerHTML = PICTURES[id] || '';
+    reward.appendChild(pictureWrap);
+
+    // Trigger the wiggle keyframe animation on the picture's [data-anim]
+    // group (Task 5). Fresh element every time, so no need to restart
+    // via reflow the way triggerBounceBack does for reused buttons.
+    const animEl = pictureWrap.querySelector('[data-anim]');
+    if (animEl) animEl.classList.add('celebrate');
+
+    const praiseLine = Session.praiseBag.next();
+    Engine.speak(praiseLine);
+
+    const praiseText = document.createElement('p');
+    praiseText.className = 'reward-praise';
+    praiseText.textContent = praiseLine;
+    reward.appendChild(praiseText);
+
+    area.appendChild(reward);
+  }
+
+  // ------------------------------------------------------------------
+  // Shared word-completion handler (Task 12) — called by all three modes
+  // once a word is fully solved. Plays the completion chime, shows the
+  // reward (Task 13: extracted into renderReward above), fills the pip,
+  // then advances to the next word or — if this was the last word — shows
+  // the end-of-session screen (Task 13).
   //
   // Stale setTimeout guard (carried-forward Task 9 review concern): the
   // advance-to-next-word timeout snapshots Session.id and checks it
   // still matches when the timeout fires. Session.id is bumped once per
   // startSession() call, so if a new session starts (Task 13's "Play
-  // Again") before this timeout fires, the stale closure sees a mismatch
-  // and does nothing instead of mutating the new session's currentIndex.
+  // Again", which goes through startSession()) before this timeout
+  // fires, the stale closure sees a mismatch and does nothing instead of
+  // mutating the new session's currentIndex or double-showing a view.
   //
   // Speech-overlap note (carried-forward Task 11 review concern):
   // Engine.speak() cancels any in-flight utterance before speaking
-  // (newest-wins). Engine.speak(line) below is called immediately, before
-  // the 1.5s hold begins, giving the praise line the longest possible
-  // head start to finish before the next round's renderFirstSound might
-  // call Engine.speak(word) and cut it off. This is an accepted
-  // low-risk "newest wins" tradeoff per spec, not a bug — a speech queue
-  // would be overkill here.
+  // (newest-wins). Engine.speak(line) inside renderReward() is called
+  // immediately, before the 1.5s hold begins, giving the praise line the
+  // longest possible head start to finish before the next round's
+  // renderFirstSound might call Engine.speak(word) and cut it off. This
+  // is an accepted low-risk "newest wins" tradeoff per spec, not a bug —
+  // a speech queue would be overkill here.
   // ------------------------------------------------------------------
   function handleWordComplete(word, id) {
     Engine.playChime('complete');
-
-    const area = document.getElementById('challenge-area');
-    if (area) {
-      area.innerHTML = '';
-
-      const reward = document.createElement('div');
-      reward.className = 'reward';
-
-      const pictureWrap = document.createElement('div');
-      pictureWrap.className = 'reward-picture';
-      pictureWrap.innerHTML = PICTURES[id] || '';
-      reward.appendChild(pictureWrap);
-
-      // Trigger the wiggle keyframe animation on the picture's [data-anim]
-      // group (Task 5). Fresh element every time, so no need to restart
-      // via reflow the way triggerBounceBack does for reused buttons.
-      const animEl = pictureWrap.querySelector('[data-anim]');
-      if (animEl) animEl.classList.add('celebrate');
-
-      const praiseLine = Session.praiseBag.next();
-      Engine.speak(praiseLine);
-
-      const praiseText = document.createElement('p');
-      praiseText.className = 'reward-praise';
-      praiseText.textContent = praiseLine;
-      reward.appendChild(praiseText);
-
-      area.appendChild(reward);
-    } else {
-      // No #challenge-area to render into — still speak the praise so
-      // audio feedback isn't silently lost.
-      Engine.speak(Session.praiseBag.next());
-    }
+    renderReward(id);
 
     Session.completed[Session.currentIndex] = true;
     renderPips('pips', Session.wordOrder.length, Session.completed);
@@ -368,9 +378,33 @@
       if (Session.currentIndex < Session.wordOrder.length) {
         renderChallenge();
       } else {
-        console.log('[placeholder] session complete — Task 13 will show the end-of-session view');
+        showEndOfSession();
       }
     }, 1500);
+  }
+
+  // ------------------------------------------------------------------
+  // End-of-session screen (Task 13) — shown once the last word's
+  // completion hold finishes. All pips are already filled at this point
+  // (the last word's own pip fill happens in handleWordComplete above,
+  // before this runs), so we just re-render them into #end-pips off the
+  // same Session.completed array. Draws a closing line from the same
+  // Session.praiseBag pool used for in-round praise, speaks + shows it,
+  // re-mounts the mascot via showView('end') and gives it a happy react.
+  // "Play Again" (wired once in init()) goes through startSession() —
+  // the same path that bumps Session.id — so the stale-timeout guard in
+  // handleWordComplete stays intact for a restarted session.
+  // ------------------------------------------------------------------
+  function showEndOfSession() {
+    showView('end');
+    renderPips('end-pips', Session.wordOrder.length, Session.completed);
+
+    const praiseLine = Session.praiseBag.next();
+    Engine.speak(praiseLine);
+    const endPraise = document.getElementById('end-praise');
+    if (endPraise) endPraise.textContent = praiseLine;
+
+    Mascot.react('happy');
   }
 
   // Pip rendering — one pip per word, filled once that word is completed.
@@ -418,6 +452,8 @@
     showView('title');
     const startBtn = document.getElementById('start-btn');
     if (startBtn) startBtn.addEventListener('click', startSession);
+    const playAgainBtn = document.getElementById('play-again-btn');
+    if (playAgainBtn) playAgainBtn.addEventListener('click', startSession);
   }
 
   document.addEventListener('DOMContentLoaded', init);
@@ -433,6 +469,8 @@
     renderBuildWord,
     renderMissingLetter,
     renderFirstSound,
+    renderReward,
     handleWordComplete,
+    showEndOfSession,
   };
 })();
