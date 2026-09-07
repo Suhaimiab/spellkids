@@ -52,13 +52,27 @@ function buildFirstSoundChallenge(word) {
 
 function createShuffleBag(items) {
   let bag = [];
+  let lastReturned = null;
+  const uniqueCount = new Set(items).size;
   function refill() {
     bag = shuffle(items);
+    let attempts = 0;
+    while (
+      uniqueCount > 1 &&
+      bag.length > 0 &&
+      bag[bag.length - 1] === lastReturned &&
+      attempts < 20
+    ) {
+      bag = shuffle(items);
+      attempts++;
+    }
   }
   return {
     next() {
       if (bag.length === 0) refill();
-      return bag.pop();
+      const item = bag.pop();
+      lastReturned = item;
+      return item;
     },
   };
 }

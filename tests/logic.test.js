@@ -9,6 +9,7 @@ const {
   pickDecoyLetters,
   buildMissingLetterChallenge,
   buildFirstSoundChallenge,
+  createShuffleBag,
 } = require('../js/logic.js');
 
 test('shuffle returns a permutation of the same items', () => {
@@ -80,19 +81,54 @@ test('buildFirstSoundChallenge correct letter is the word\'s first letter', () =
   assert.equal(challenge.options.length, 3);
 });
 
-test('createShuffleBag never repeats an item until all items are used once', async () => {
-  const { createShuffleBag } = require('../js/logic.js');
+test('createShuffleBag never repeats an item until all items are used once', () => {
   const bag = createShuffleBag(['a', 'b', 'c']);
   const drawn = [bag.next(), bag.next(), bag.next()];
   assert.deepEqual([...drawn].sort(), ['a', 'b', 'c']);
 });
 
 test('createShuffleBag refills after exhausting all items', () => {
-  const { createShuffleBag } = require('../js/logic.js');
   const bag = createShuffleBag(['a', 'b']);
   const drawn = [bag.next(), bag.next(), bag.next(), bag.next()];
   assert.equal(drawn.length, 4);
   // first 2 and second 2 are each a permutation of ['a','b']
   assert.deepEqual([...drawn.slice(0, 2)].sort(), ['a', 'b']);
   assert.deepEqual([...drawn.slice(2, 4)].sort(), ['a', 'b']);
+});
+
+test('createShuffleBag never draws the same item twice in a row across refill boundaries', () => {
+  const bag = createShuffleBag(['a', 'b', 'c']);
+  let previous = null;
+  for (let i = 0; i < 60; i++) {
+    const current = bag.next();
+    if (previous !== null) {
+      assert.notEqual(current, previous);
+    }
+    previous = current;
+  }
+});
+
+test('scrambleLetters handles a word with a duplicate letter (BEE)', () => {
+  for (let i = 0; i < 50; i++) {
+    const scrambled = scrambleLetters('BEE');
+    assert.deepEqual([...scrambled].sort(), ['B', 'E', 'E'].sort());
+  }
+});
+
+test('buildMissingLetterChallenge handles a word with a duplicate letter (BEE)', () => {
+  for (let i = 0; i < 20; i++) {
+    const challenge = buildMissingLetterChallenge('BEE');
+    const blankCount = challenge.displayLetters.filter((l) => l === null).length;
+    assert.equal(blankCount, 1);
+    assert.equal(challenge.displayLetters[challenge.missingIndex], null);
+    assert.ok(challenge.options.includes(challenge.missingLetter));
+    assert.equal(challenge.options.length, 3);
+  }
+});
+
+test('buildFirstSoundChallenge handles a word with a duplicate letter (BEE)', () => {
+  const challenge = buildFirstSoundChallenge('BEE');
+  assert.equal(challenge.correctLetter, 'B');
+  assert.ok(challenge.options.includes('B'));
+  assert.equal(challenge.options.length, 3);
 });
