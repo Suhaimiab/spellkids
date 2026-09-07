@@ -57,6 +57,8 @@
     const area = document.getElementById('challenge-area');
     if (!area) return;
 
+    Engine.speak(word);
+
     let filledCount = 0;
     const bounceGuards = new WeakSet();
 
@@ -163,6 +165,8 @@
 
     const challenge = SpellLogic.buildMissingLetterChallenge(word);
     const { displayLetters, missingLetter, options } = challenge;
+
+    Engine.speak(word);
 
     const wrap = document.createElement('div');
     wrap.className = 'missing-letter';
