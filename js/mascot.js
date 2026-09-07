@@ -26,6 +26,11 @@ const MASCOT_SVG = `
 </svg>`;
 
 const Mascot = {
+  // Singleton: only the most-recently-mounted SVG is tracked here. Mounting
+  // again (e.g. into a different view's mount point) replaces `_svg`, so
+  // `react()` always targets whichever mascot was mounted last — callers
+  // that show one view at a time must re-mount on every view switch rather
+  // than mounting all instances up front.
   _svg: null,
 
   mount(el) {

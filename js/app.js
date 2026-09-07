@@ -3,8 +3,11 @@
 // This is the skeleton/plumbing layer (Task 8): it owns session state,
 // switches between the three views, renders progress pips, and mounts the
 // mascot. The actual challenge rendering (Build the Word / Missing Letter /
-// First Sound Match) is added in Tasks 9-11 and hooks into
-// Session.startRound() / #challenge-area, which is left empty here.
+// First Sound Match) is added in Tasks 9-11. It will read/write Session
+// fields directly (Session.currentIndex, Session.modeBag.next(), etc.) and
+// render into #challenge-area via module-level functions, following the
+// pattern already used here (startSession, showView, renderPips) — Session
+// itself stays a plain data bag with no methods of its own.
 
 (function () {
   'use strict';
@@ -71,6 +74,9 @@
   // bookkeeping here.
   function showView(name) {
     const views = { title: 'view-title', game: 'view-game', end: 'view-end' };
+    if (!views[name]) {
+      console.warn('showView: unrecognized view name "' + name + '"');
+    }
     Object.keys(views).forEach((key) => {
       const section = document.getElementById(views[key]);
       if (section) section.hidden = key !== name;
