@@ -60,3 +60,32 @@ button {
 }
 
 [hidden] { display: none !important; }
+
+/* Mascot — idle bob + happy/soft reaction animations */
+.mascot {
+  width: 92px;
+  height: 92px;
+  display: block;
+  margin: 0 auto;
+  animation: mascot-bob 2.6s ease-in-out infinite;
+}
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.mascot.mascot-idle { animation: mascot-bob 2.6s ease-in-out infinite; }
+.mascot.mascot-happy { animation: mascot-cheer 0.6s ease; }
+@keyframes mascot-cheer {
+  0% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.25) rotate(-8deg); }
+  60% { transform: scale(1.1) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.mascot.mascot-soft { animation: mascot-nudge 0.5s ease; }
+@keyframes mascot-nudge {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot { animation: none !important; }
+}
