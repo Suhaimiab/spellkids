@@ -51,16 +51,11 @@
   // ------------------------------------------------------------------
   // Challenge dispatch (Task 9) — reads the current word off Session and
   // draws a mode from Session.modeBag, then hands off to that mode's
-  // renderer. Only 'build' (Build the Word) is implemented in Task 9;
-  // 'missing' (Task 10) and 'firstsound' (Task 11) are stubs.
-  //
-  // TEMPORARY FALLBACK: until Tasks 10-11 land, the 'missing' and
-  // 'firstsound' branches fall back to renderBuildWord() (with a
-  // console.warn) instead of leaving #challenge-area blank — this keeps
-  // every draw from Session.modeBag testable end-to-end in the browser
-  // right now, since the bag can hand back any of the three modes on any
-  // given word. Task 10/11's implementer: replace the matching branch's
-  // body with the real renderer and delete its console.warn/fallback call.
+  // renderer. All three modes ('build', 'missing', 'firstsound') are
+  // implemented as of Task 11. 'firstsound' needs the word's picture
+  // (looked up from PICTURES by id), so all three renderers are called
+  // with the word string plus the entry's id for consistency, even though
+  // 'build'/'missing' don't use the id today.
   // ------------------------------------------------------------------
   function renderChallenge() {
     const entry = Session.wordOrder[Session.currentIndex];
@@ -70,13 +65,11 @@
     if (area) area.innerHTML = '';
 
     if (mode === 'build') {
-      renderBuildWord(entry.word);
+      renderBuildWord(entry.word, entry.id);
     } else if (mode === 'missing') {
-      renderMissingLetter(entry.word);
+      renderMissingLetter(entry.word, entry.id);
     } else if (mode === 'firstsound') {
-      // TODO(Task 11): implement First Sound Match mode renderer here.
-      console.warn('renderChallenge: "firstsound" mode not yet implemented (Task 11) — falling back to Build the Word');
-      renderBuildWord(entry.word);
+      renderFirstSound(entry.word, entry.id);
     }
   }
 
@@ -106,7 +99,7 @@
   // sound. Renders directly into #challenge-area per the module-level
   // render pattern established in Task 8 (no Session methods).
   // ------------------------------------------------------------------
-  function renderBuildWord(word) {
+  function renderBuildWord(word, id) {
     const area = document.getElementById('challenge-area');
     if (!area) return;
 
@@ -174,7 +167,7 @@
   // (already cleared by renderChallenge()), following the same pattern as
   // renderBuildWord: local closure state, no Session/module-level mutation.
   // ------------------------------------------------------------------
-  function renderMissingLetter(word) {
+  function renderMissingLetter(word, id) {
     const area = document.getElementById('challenge-area');
     if (!area) return;
 
@@ -225,6 +218,63 @@
         Array.from(bubbleRow.children).forEach((el) => { el.disabled = true; });
 
         // Filling the one blank always completes the word in this mode.
+        handleWordComplete(word);
+      } else {
+        // Wrong tap: bounce-back animation only, no sound (per spec).
+        triggerBounceBack(btn, bounceGuards);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // First Sound Match mode (Task 11) — the word's picture is shown and
+  // spoken aloud (Engine.speak), with 3 choice bubbles (correct first
+  // letter + 2 decoys, from SpellLogic.buildFirstSoundChallenge) below it.
+  // Tapping the correct bubble chimes and completes the word immediately —
+  // unlike Build the Word / Missing Letter there are no blanks to fill, one
+  // correct tap is the whole challenge. Tapping a decoy bounces just that
+  // bubble back with no sound, per spec. Follows the same local-closure,
+  // no-Session-mutation pattern as the other two renderers.
+  // ------------------------------------------------------------------
+  function renderFirstSound(word, id) {
+    const area = document.getElementById('challenge-area');
+    if (!area) return;
+
+    const challenge = SpellLogic.buildFirstSoundChallenge(word);
+    const { correctLetter, options } = challenge;
+
+    Engine.speak(word);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'first-sound';
+
+    const pictureWrap = document.createElement('div');
+    pictureWrap.className = 'firstsound-picture';
+    pictureWrap.innerHTML = PICTURES[id] || '';
+
+    const bubbleRow = document.createElement('div');
+    bubbleRow.className = 'bubble-row';
+    const bounceGuards = new WeakSet();
+    options.forEach((letter) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-bubble';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => handleBubbleTap(letter, btn));
+      bubbleRow.appendChild(btn);
+    });
+
+    wrap.appendChild(pictureWrap);
+    wrap.appendChild(bubbleRow);
+    area.appendChild(wrap);
+
+    function handleBubbleTap(letter, btn) {
+      if (btn.disabled) return;
+      if (letter === correctLetter) {
+        Engine.playChime('correct');
+        Array.from(bubbleRow.children).forEach((el) => { el.disabled = true; });
+
+        // A single correct tap always completes this mode (no blanks).
         handleWordComplete(word);
       } else {
         // Wrong tap: bounce-back animation only, no sound (per spec).
@@ -322,6 +372,7 @@
     renderChallenge,
     renderBuildWord,
     renderMissingLetter,
+    renderFirstSound,
     handleWordComplete,
   };
 })();
