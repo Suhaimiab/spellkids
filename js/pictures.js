@@ -53,11 +53,18 @@ const PICTURES = {
   </g></svg>`,
 
   bat: `<svg viewBox="0 0 200 200"><g data-anim>
-    <ellipse cx="100" cy="105" rx="18" ry="26" style="fill:var(--berry-deep)"/>
-    <path d="M82,95 Q40,70 30,110 Q60,105 84,115 Z" style="fill:var(--berry)"/>
-    <path d="M118,95 Q160,70 170,110 Q140,105 116,115 Z" style="fill:var(--berry)"/>
-    <circle cx="94" cy="92" r="4" style="fill:var(--ink)"/>
-    <circle cx="106" cy="92" r="4" style="fill:var(--ink)"/>
+    <path d="M85,95 L45,60 L50,82 L22,75 L30,100 L10,102 L24,122 L52,116 L58,138 L85,118 Z" style="fill:var(--ink)"/>
+    <path d="M115,95 L155,60 L150,82 L178,75 L170,100 L190,102 L176,122 L148,116 L142,138 L115,118 Z" style="fill:var(--ink)"/>
+    <ellipse cx="100" cy="122" rx="17" ry="24" style="fill:var(--ink)"/>
+    <circle cx="100" cy="86" r="22" style="fill:var(--ink)"/>
+    <polygon points="82,72 74,48 94,74" style="fill:var(--ink)"/>
+    <polygon points="118,72 126,48 106,74" style="fill:var(--ink)"/>
+    <polygon points="83,68 78,54 90,70" style="fill:var(--berry-deep)"/>
+    <polygon points="117,68 122,54 110,70" style="fill:var(--berry-deep)"/>
+    <circle cx="91" cy="84" r="4" style="fill:var(--sun)"/>
+    <circle cx="109" cy="84" r="4" style="fill:var(--sun)"/>
+    <polygon points="94,96 98,96 96,102" style="fill:var(--bg)"/>
+    <polygon points="102,96 106,96 104,102" style="fill:var(--bg)"/>
   </g></svg>`,
 
   pig: `<svg viewBox="0 0 200 200"><g data-anim>
@@ -72,10 +79,11 @@ const PICTURES = {
   </g></svg>`,
 
   box: `<svg viewBox="0 0 200 200"><g data-anim>
-    <rect x="55" y="80" width="90" height="80" rx="6" style="fill:var(--leaf)"/>
-    <polygon points="55,80 75,58 165,58 145,80" style="fill:var(--leaf-deep)"/>
-    <rect x="95" y="80" width="10" height="80" style="fill:var(--berry)"/>
-    <rect x="55" y="112" width="90" height="10" style="fill:var(--berry)"/>
+    <rect x="55" y="80" width="90" height="80" rx="4" style="fill:var(--sun)"/>
+    <polygon points="55,80 75,58 165,58 145,80" style="fill:var(--sun-deep)"/>
+    <path d="M75,58 L110,80 L165,58" style="fill:none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+    <rect x="95" y="80" width="10" height="80" style="fill:var(--sun-deep)"/>
+    <rect x="55" y="80" width="90" height="6" style="fill:var(--sun-deep)" opacity="0.6"/>
   </g></svg>`,
 
   hat: `<svg viewBox="0 0 200 200"><g data-anim>
