@@ -100,6 +100,7 @@
         tile.classList.remove('tile--blank');
         tile.classList.add('tile--filled');
         filledCount++;
+        Engine.speak(letter);
         Engine.playChime('correct');
         btn.disabled = true;
         btn.classList.add('tray-letter--used');
@@ -108,7 +109,10 @@
           window.SpellApp.handleWordComplete(word, id);
         }
       } else {
-        // Wrong tap: bounce-back animation only, no sound (per spec).
+        // Wrong tap: bounce-back animation only, no penalty sound (per
+        // spec) — but we do say the letter's name aloud (Task: letter-tap
+        // speech), same as a correct tap, since it's informational.
+        Engine.speak(letter);
         triggerBounceBack(btn, bounceGuards);
       }
     }
@@ -135,11 +139,14 @@
       btn.textContent = letter;
       btn.addEventListener('click', () => {
         if (btn.disabled) return;
+        Engine.speak(letter);
         if (letter === correctLetter) {
           Array.from(row.children).forEach((el) => { el.disabled = true; });
           onCorrect(letter, btn);
         } else {
-          // Wrong tap: bounce-back animation only, no sound (per spec).
+          // Wrong tap: bounce-back animation only, no penalty sound (per
+          // spec) — the letter-name speech above is informational, not a
+          // penalty, so it stays for wrong taps too.
           triggerBounceBack(btn, bounceGuards);
           if (onWrong) onWrong(letter, btn);
         }
@@ -219,12 +226,22 @@
     const challenge = SpellLogic.buildFirstSoundChallenge(word);
     const { correctLetter, options } = challenge;
 
-    Engine.speak(word);
+    // Word + clarifying prompt as one utterance (avoids a second
+    // speechSynthesis.cancel() racing/clobbering the word itself — Engine.speak
+    // always cancels any prior utterance). Tells the child/parent they're
+    // picking the ONE starting letter, not spelling the whole word (feedback
+    // fix: "bqd"-style bubbles read as confusing without this).
+    const promptText = 'Which letter does it start with?';
+    Engine.speak(`${word}. ${promptText}`);
 
     const wrap = document.createElement('div');
     wrap.className = 'first-sound';
 
     const pictureWrap = buildPictureElement(id);
+
+    const prompt = document.createElement('p');
+    prompt.className = 'first-sound-prompt';
+    prompt.textContent = promptText;
 
     const bubbleRow = renderBubbleRow(options, correctLetter, () => {
       Engine.playChime('correct');
@@ -234,6 +251,7 @@
     });
 
     wrap.appendChild(pictureWrap);
+    wrap.appendChild(prompt);
     wrap.appendChild(bubbleRow);
     area.appendChild(wrap);
   }

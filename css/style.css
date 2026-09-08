@@ -326,6 +326,19 @@ button {
   gap: 28px;
 }
 
+/* Clarifying prompt (feedback fix) — tells the child/parent they're picking
+   the ONE starting letter, not spelling the whole word. Sits between the
+   picture and the choice bubbles; styled after .reward-praise but smaller
+   and in body font since it's an instruction, not a celebration. */
+.first-sound-prompt {
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin: 0;
+}
+
 /* ============================================================
    Reward / praise (Task 12) — shown in #challenge-area once a
    word is completed, regardless of which mode was just played.
